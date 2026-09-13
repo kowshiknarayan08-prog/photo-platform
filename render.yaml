@@ -1,0 +1,46 @@
+# Render blueprint for the API service.
+# Import this repo at https://dashboard.render.com/blueprints or configure a
+# Web Service manually with the settings below.
+#
+# The frontend deploys separately on Vercel (see client/vercel.json).
+
+services:
+  - type: web
+    name: photo-platform-api
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install && npx prisma generate && npx prisma migrate deploy
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      # ---- set these in the Render dashboard (do NOT commit real values) ----
+      - key: DATABASE_URL
+        sync: false # Supabase connection string
+      - key: JWT_SECRET
+        sync: false # `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`
+      - key: CORS_ORIGIN
+        sync: false # your Vercel URL, e.g. https://photo-platform.vercel.app
+      - key: STORAGE_DRIVER
+        value: supabase
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: photos
+      - key: PUBLIC_API_URL
+        sync: false # the Render URL of this service
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: GALLERY_TOKEN_EXPIRES_IN
+        value: 2h
+      - key: MAX_UPLOAD_MB
+        value: 15
+      - key: MAX_FILES_PER_UPLOAD
+        value: 20

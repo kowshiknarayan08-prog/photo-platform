@@ -1,0 +1,27 @@
+{
+  "name": "photo-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Full-stack photo-sharing platform (Trizen AI internship challenge)",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,green \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:server": "npm --workspace server run dev",
+    "dev:client": "npm --workspace client run dev",
+    "build": "npm --workspace client run build",
+    "start": "npm --workspace server run start",
+    "test": "npm --workspace server run test",
+    "seed": "npm --workspace server run seed",
+    "prisma:migrate": "npm --workspace server run prisma:migrate",
+    "prisma:generate": "npm --workspace server run prisma:generate"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

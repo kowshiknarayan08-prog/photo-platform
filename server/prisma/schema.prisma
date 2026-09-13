@@ -1,0 +1,116 @@
+// Prisma schema for the Photo Sharing Platform
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         Role     @default(MEMBER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  ownedEvents   Event[]        @relation("EventOwner")
+  eventMembers  EventMember[]
+  uploadedPhotos Photo[]       @relation("PhotoUploader")
+
+  @@index([role])
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner   User          @relation("EventOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members EventMember[]
+  photos  Photo[]
+  gallery Gallery?
+
+  @@index([ownerId])
+}
+
+// Join table: which MEMBER users are assigned to which events.
+model EventMember {
+  id        String   @id @default(cuid())
+  eventId   String
+  userId    String
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([userId])
+}
+
+model Photo {
+  id           String   @id @default(cuid())
+  eventId      String
+  uploadedById String
+  filename     String // original file name
+  storageKey   String // key/path inside the object store
+  storageUrl   String? // public or cached URL, if the driver exposes one
+  mimeType     String
+  fileSize     Int // bytes
+  width        Int?
+  height       Int?
+  isSelected   Boolean  @default(false) // admin marked it for the gallery
+  createdAt    DateTime @default(now())
+
+  event        Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  uploadedBy   User           @relation("PhotoUploader", fields: [uploadedById], references: [id], onDelete: Cascade)
+  galleryLinks GalleryPhoto[]
+
+  @@index([eventId])
+  @@index([uploadedById])
+}
+
+model Gallery {
+  id          String    @id @default(cuid())
+  eventId     String    @unique
+  title       String
+  slug        String    @unique // used in the shareable URL: /gallery/:slug
+  pinHash     String // bcrypt hash of the numeric PIN
+  isPublished Boolean   @default(false)
+  publishedAt DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  event  Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  photos GalleryPhoto[]
+
+  @@index([slug])
+}
+
+// Snapshot of the photos an admin published into a gallery, with ordering.
+model GalleryPhoto {
+  id        String @id @default(cuid())
+  galleryId String
+  photoId   String
+  position  Int    @default(0)
+
+  gallery Gallery @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+  photo   Photo   @relation(fields: [photoId], references: [id], onDelete: Cascade)
+
+  @@unique([galleryId, photoId])
+  @@index([galleryId])
+}
